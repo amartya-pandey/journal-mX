@@ -4,7 +4,7 @@ import requests
 from app import fetch_entries, create_entry, delete_entry
 
 
-FLASK_URL = "http://127.0.0.1:5000"
+FLASK_URL = "https://journal-mx-1.onrender.com"
 
 
 def get_entries():
