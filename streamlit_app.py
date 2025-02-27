@@ -1,67 +1,64 @@
-from database import Database
 import streamlit as st
 import requests
-from app import fetch_entries, create_entry, delete_entry
+import os
 
-
-FLASK_URL = "https://journal-mx-1.onrender.com"
-
+FLASK_URL = os.getenv("FLASK_URL", "https://journal-mx-1.onrender.com")
 
 def get_entries():
-    response = requests.get(f'{FLASK_URL}/entries')
+    response = requests.get(f"{FLASK_URL}/entries")
     return response.json() if response.status_code == 200 else []
 
+st.title('📖 My Journal App')
+st.write('Write, View and Manage your journal entries.')
 
-
-st.title('My Journal app')
-st.write('Write, View and Delete your journal entries.')
-
-# Show all Entries
+# Display Entries
 entries = get_entries()
 for entry in entries:
     st.subheader(entry['title'])
     st.write(entry['content'])
-    st.caption(f'Created on {entry['date']}')
-    if st.button(f"🗑️  Delete", key=entry["id"]):
-        response = requests.delete(f"{FLASK_URL}/delete/{entry['id']}")
-        if response.status_code == 200:
-            st.success("Entry deleted successfully!")
+    st.caption(f'🕒 Created on {entry["date"]}')
 
+    col1, col2 = st.columns(2)
+    with col1:
+        if st.button(f"🗑️ Delete", key=f"del-{entry['id']}"):
+            response = requests.delete(f"{FLASK_URL}/delete/{entry['id']}")
+            if response.status_code == 200:
+                st.success("Entry deleted successfully!")
+                st.rerun()
+            else:
+                st.error("Failed to delete entry.")
 
-    st.write('---')
+    st.markdown("---")
 
-    # st.success('Streamlit frontend working properly')
-
-# Create new entry
-st.subheader('Add new entry')
+# Create Entry
+st.subheader("➕ Add New Entry")
 title = st.text_input('Title')
 content = st.text_area('Content')
 
-if st.button('Add ENTRY'):
+if st.button('📌 Add Entry'):
     if title and content:
-        new_entry={'title': title, 'content': content}
-        response = requests.post(f'{FLASK_URL}/create', json=new_entry)
-        if response.status_code == 200:
-            st.success('ENTRY added succesfully')
+        response = requests.post(f"{FLASK_URL}/create", json={"title": title, "content": content})
+        if response.status_code == 201:
+            st.success("Entry added successfully!")
+            st.experimental_rerun()
+        else:
+            st.error("Failed to add entry.")
     else:
-        st.error('both Title and Content are required...')
+        st.error("Title and content are required.")
 
-
-st.header("Edit Journal Entry")
+# Update Entry
+st.subheader("✏️ Edit Journal Entry")
 entry_id = st.number_input("Entry ID to Edit", min_value=1, step=1)
-title = st.text_input("New Title")
-content = st.text_area("New Content")
+new_title = st.text_input("New Title")
+new_content = st.text_area("New Content")
 
-if st.button("Update Entry"):
-    update_data = {"title": title, "content": content}
-    response = requests.put(f"{FLASK_URL}/update/{entry_id}", json=update_data)
-    
-    if response.status_code == 200:
-        st.success("Entry updated successfully!")
-        # st.experimental_rerun()
+if st.button("✅ Update Entry"):
+    if new_title and new_content:
+        response = requests.put(f"{FLASK_URL}/update/{entry_id}", json={"title": new_title, "content": new_content})
+        if response.status_code == 200:
+            st.success("Entry updated successfully!")
+            st.experimental_rerun()
+        else:
+            st.error("Failed to update entry.")
     else:
-        st.error("Failed to update entry.")
-
-
-
-
+        st.error("New title and content are required.")
